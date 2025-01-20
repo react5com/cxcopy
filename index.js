@@ -37,13 +37,16 @@ function copyFolderRecursiveSync(source, target, isRoot = true, changedFilePath,
 }
 
 export function cxCopy(source, destination, watch, verbose) {
-  if (!fs.existsSync(source)) {
+  const isSourceExists = fs.existsSync(source);
+  if (!watch && !isSourceExists) {
     console.error(`Source path "${source}" does not exist.`);
     process.exit(1);
   }
 
-  copyFolderRecursiveSync(source, destination, true, null, verbose);
-  if (verbose) console.log(`Copied from "${source}" to "${destination}" successfully.`);
+  if (isSourceExists) {
+    copyFolderRecursiveSync(source, destination, true, null, verbose);
+    if (verbose) console.log(`Copied from "${source}" to "${destination}" successfully.`);
+  }
 
   if (watch) {
     // watch with chokidar

@@ -1,6 +1,6 @@
 {
   "name": "cxcopy",
-  "version": "0.5.2",
+  "version": "0.5.4",
   "description": "Tiny cross-platform folder copy command-line utility (CLI) with watch mode.",
   "keywords": [
     "copy",
