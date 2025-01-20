@@ -1,6 +1,6 @@
 {
   "name": "cxcopy",
-  "version": "0.4.1",
+  "version": "0.5.2",
   "description": "Tiny cross-platform folder copy command-line utility (CLI) with watch mode.",
   "keywords": [
     "copy",
@@ -18,6 +18,13 @@
   "author": "React5",
   "type": "module",
   "main": "index.js",
+  "bin": {
+    "cxcopy": "./bin/cxcopy.js"
+  },
+  "files": [
+    "index.js",
+    "bin/"
+  ],
   "scripts": {
   },
   "dependencies": {

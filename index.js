@@ -1,8 +1,9 @@
+
 import fs from 'fs';
 import path from 'path';
 import chokidar from 'chokidar';
 
-function copyFileSync(source, target) {
+function copyFileSync(source, target, verbose) {
   let targetFile = target;
 
   if (fs.existsSync(target)) {
@@ -11,9 +12,10 @@ function copyFileSync(source, target) {
     }
   }
   fs.writeFileSync(targetFile, fs.readFileSync(source));
+  if (verbose) console.log(`Copied file from "${source}" to "${targetFile}" successfully.`);
 }
 
-function copyFolderRecursiveSync(source, target, isRoot = true) {
+function copyFolderRecursiveSync(source, target, isRoot = true, changedFilePath, verbose) {
   let files = [];
   const targetFolder = isRoot ? target : path.join(target, path.basename(source));
   if (!fs.existsSync(targetFolder)) {
@@ -25,46 +27,37 @@ function copyFolderRecursiveSync(source, target, isRoot = true) {
     files.forEach(function (file) {
       const curSource = path.join(source, file);
       if (fs.lstatSync(curSource).isDirectory()) {
-        copyFolderRecursiveSync(curSource, targetFolder, false);
+        copyFolderRecursiveSync(curSource, targetFolder, false, changedFilePath, verbose);
       } else {
-        copyFileSync(curSource, targetFolder);
+        if (!changedFilePath || changedFilePath === curSource)
+          copyFileSync(curSource, targetFolder, verbose);
       }
     });
   }
 }
 
-const args = process.argv.slice(2);
-if (args.length !== 3) {
-  console.error('Usage: node cxcopy.js <source> <destination> [--watch|-w]');
-  process.exit(1);
-}
+export function cxCopy(source, destination, watch, verbose) {
+  if (!fs.existsSync(source)) {
+    console.error(`Source path "${source}" does not exist.`);
+    process.exit(1);
+  }
 
-const source = args[0];
-const destination = args[1];
-const watch = args[2] === '--watch' || args[2] === '-w';
+  copyFolderRecursiveSync(source, destination, true, null, verbose);
+  if (verbose) console.log(`Copied from "${source}" to "${destination}" successfully.`);
 
-if (!fs.existsSync(source)) {
-  console.error(`Source path "${source}" does not exist.`);
-  process.exit(1);
-}
+  if (watch) {
+    // watch with chokidar
+    const watcher = chokidar.watch(source, {
+      ignored: /(^|[\/\\])\../,
+      persistent: true,
+    });
 
-copyFolderRecursiveSync(source, destination);
-console.log(`Copied from "${source}" to "${destination}" successfully.`);
+    watcher.on('add', (changedFilePath) => {
+      copyFolderRecursiveSync(source, destination, true, changedFilePath, verbose);
+    });
 
-if (watch) {
-  // watch with chokidar
-  const watcher = chokidar.watch(source, {
-    ignored: /(^|[\/\\])\../,
-    persistent: true,
-  });
-
-  watcher.on('add', (path) => {
-    copyFolderRecursiveSync(path, destination);
-    console.log(`Copied from "${path}" to "${destination}" successfully.`);
-  });
-
-  watcher.on('change', (path) => {
-    copyFolderRecursiveSync(path, destination);
-    console.log(`Copied from "${path}" to "${destination}" successfully.`);
-  });
+    watcher.on('change', (changedFilePath) => {
+      copyFolderRecursiveSync(source, destination, true, changedFilePath, verbose);
+    });
+  }
 }
